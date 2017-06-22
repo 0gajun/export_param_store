@@ -47,34 +47,67 @@ func main() {
 			Value: &envVarNames,
 		},
 	}
-	app.Action = exportParamStoreAsEnvVar
+	app.Action = run
 
 	app.Run(os.Args)
 }
 
-func exportParamStoreAsEnvVar(c *cli.Context) error {
+func run(c *cli.Context) error {
 	if err := validateArgs(); err != nil {
 		return err
 	}
 
-	svc := newAwsService(region)
+	params, err := getParameters(c.Args(), region, environment, identifier)
+	if err != nil {
+		return err
+	}
 
+	printParametersAsExportForm(params)
+
+	return nil
+}
+
+type Parameter struct {
+	Name     string
+	FullName string
+	Value    string
+}
+
+type Parameters []Parameter
+
+func parametersFrom(output *ssm.GetParametersOutput, prefix string) Parameters {
+	var params Parameters
+	for _, p := range output.Parameters {
+		name := removePrefix(*p.Name, prefix)
+		params = append(params, Parameter{Name: name, FullName: *p.Name, Value: *p.Value})
+	}
+	return params
+}
+
+func removePrefix(input string, prefix string) string {
+	return strings.Replace(input, prefix, "", 1)
+}
+
+func getParameters(envs []string, region, environment, identifier string) (Parameters, error) {
 	prefix := fmt.Sprintf("%s.%s.", environment, identifier)
-
-	input := buildGetParameterQuery(prefix, c.Args())
-
+	input := buildGetParameterQuery(prefix, envs)
+	svc := newAwsService(region)
 	output, err := svc.GetParameters(input)
 
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		var nilSlice Parameters
+		return nilSlice, cli.NewExitError(err.Error(), 1)
 	}
 
-	for _, p := range output.Parameters {
-		name := strings.ToUpper(strings.Replace(*p.Name, prefix, "", 1))
-		fmt.Printf("export %s=%s\n", name, *p.Value)
-	}
+	params := parametersFrom(output, prefix)
 
-	return nil
+	return params, nil
+}
+
+func newAwsService(region string) *ssm.SSM {
+	sess := session.Must(session.NewSession())
+	svc := ssm.New(sess, &aws.Config{Region: aws.String(region)})
+	return svc
 }
 
 func buildGetParameterQuery(prefix string, args []string) *ssm.GetParametersInput {
@@ -86,6 +119,13 @@ func buildGetParameterQuery(prefix string, args []string) *ssm.GetParametersInpu
 	}
 	input.SetWithDecryption(true)
 	return &input
+}
+
+func printParametersAsExportForm(params Parameters) {
+	for _, p := range params {
+		name := strings.ToUpper(p.Name)
+		fmt.Printf("export %s=%s\n", name, p.Value)
+	}
 }
 
 func validateArgs() error {
@@ -110,10 +150,4 @@ func validateArgs() error {
 	} else {
 		return errors
 	}
-}
-
-func newAwsService(region string) *ssm.SSM {
-	sess := session.Must(session.NewSession())
-	svc := ssm.New(sess, &aws.Config{Region: aws.String(region)})
-	return svc
 }
