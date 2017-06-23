@@ -14,7 +14,6 @@ import (
 var region string
 var environment string
 var identifier string
-var envVarNames cli.StringSlice
 
 func main() {
 	app := cli.NewApp()
@@ -40,11 +39,6 @@ func main() {
 			Value:       "",
 			Usage:       "Identifier",
 			Destination: &identifier,
-		},
-		cli.StringSliceFlag{
-			Name:  "env_var",
-			Usage: "Environment Variable Name",
-			Value: &envVarNames,
 		},
 	}
 	app.Action = run
