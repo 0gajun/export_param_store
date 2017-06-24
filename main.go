@@ -17,6 +17,7 @@ var identifier string
 
 func main() {
 	app := cli.NewApp()
+	app.Version = "0.0.1"
 
 	app.Name = "export_param_store"
 	app.Usage = "Export AWS Parameter Store values as environment variables"

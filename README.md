@@ -13,11 +13,16 @@ By this command, `MYSQL_USER_NAME` and `MYSQL_USER_PASSWORD` are exported as env
 * `MYSQL_USER_PASSWORD` corresponds a parameter named `prod.service_name.mysql_user_password` in Parameter Store.
 
 ### How does this work?
-This command fetches parameters named `(env).(identifier).(environment_var_name)` from Parameter Store
-and print them like as `export (environment_var_name)=(environment_var_value)`.
+This command fetches parameters from Parameter Store
+and print them like as `export (ENV_VAR_NAME)=(env_var_value)`.
+
+The parameters should be named `(env).(identifier).(environment_var_name)`.
 
 If we have two parameters in Parameter Store,
-`prod.service_name.mysql_user_name` and `prod.service_name.mysql_user_password`,
+
+* `prod.service_name.mysql_user_name`
+* `prod.service_name.mysql_user_password`
+
 this command will print values like as following.
 
 ```
@@ -28,12 +33,15 @@ export MYSQL_USER_PASSWORD=hogehoge
 ```
 
 So, what only you have to do is evaluating this output using `$()`.
+
 Yeah! We can export environment variables from Parameter Store much easily!
 
 ## Installation
 
 ```
-# go get github.com/0gajun/shiba
+# git clone https://github.com/0gajun/shiba.git
+# glide install
+# go install
 ```
 
 ## Author
