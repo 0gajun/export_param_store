@@ -3,12 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ssm"
 	"github.com/urfave/cli"
+
+	"github.com/0gajun/export_param_store/paramstore"
 )
 
 var region string
@@ -52,75 +50,18 @@ func run(c *cli.Context) error {
 		return err
 	}
 
-	params, err := getParameters(c.Args(), region, environment, identifier)
+	client := paramstore.NewClient(region, environment, identifier)
+
+	params, err := client.GetParameters(c.Args())
 	if err != nil {
 		return err
 	}
 
-	printParametersAsExportForm(params)
+	for _, p := range params {
+		fmt.Println(p.GetAsExportForm())
+	}
 
 	return nil
-}
-
-type Parameter struct {
-	Name     string
-	FullName string
-	Value    string
-}
-
-type Parameters []Parameter
-
-func parametersFrom(output *ssm.GetParametersOutput, prefix string) Parameters {
-	var params Parameters
-	for _, p := range output.Parameters {
-		name := removePrefix(*p.Name, prefix)
-		params = append(params, Parameter{Name: name, FullName: *p.Name, Value: *p.Value})
-	}
-	return params
-}
-
-func removePrefix(input string, prefix string) string {
-	return strings.Replace(input, prefix, "", 1)
-}
-
-func getParameters(envs []string, region, environment, identifier string) (Parameters, error) {
-	prefix := fmt.Sprintf("%s.%s.", environment, identifier)
-	input := buildGetParameterQuery(prefix, envs)
-	svc := newAwsService(region)
-	output, err := svc.GetParameters(input)
-
-	if err != nil {
-		var nilSlice Parameters
-		return nilSlice, cli.NewExitError(err.Error(), 1)
-	}
-
-	params := parametersFrom(output, prefix)
-
-	return params, nil
-}
-
-func newAwsService(region string) *ssm.SSM {
-	sess := session.Must(session.NewSession())
-	svc := ssm.New(sess, &aws.Config{Region: aws.String(region)})
-	return svc
-}
-
-func buildGetParameterQuery(prefix string, args []string) *ssm.GetParametersInput {
-	input := ssm.GetParametersInput{}
-	for _, envVarName := range args {
-		loweredEnv := strings.ToLower(envVarName)
-		paramName := fmt.Sprintf("%s%s", prefix, loweredEnv)
-		input.Names = append(input.Names, &paramName)
-	}
-	input.SetWithDecryption(true)
-	return &input
-}
-
-func printParametersAsExportForm(params Parameters) {
-	for _, p := range params {
-		name := strings.ToUpper(p.Name)
-		fmt.Printf("export %s=%s\n", name, p.Value)
-	}
 }
 
 func validateArgs() error {
