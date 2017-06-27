@@ -39,7 +39,7 @@ Yeah! We can export environment variables from Parameter Store much easily!
 ## Installation
 
 ```
-# git clone https://github.com/0gajun/shiba.git
+# git clone https://github.com/0gajun/export_param_store.git
 # glide install
 # go install
 ```

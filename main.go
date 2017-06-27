@@ -83,7 +83,7 @@ func validateArgs() error {
 
 	if ok {
 		return nil
-	} else {
-		return errors
 	}
+
+	return errors
 }
