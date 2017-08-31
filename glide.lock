@@ -1,8 +1,8 @@
-hash: 024a3210e2695345d4a20f8b8f6f0d01fe1fcea574ca86327d11db90b477592f
-updated: 2017-07-09T21:27:02.430014382+09:00
+hash: 72117bc05efd7a9c73893ba133ccbe61258f8d7479c46cff7a1da7e9e0a41903
+updated: 2017-08-31T08:56:33.436636024+09:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: b1a7b51924b90a6ecdbaeb17e96418740ff07a1e
+  version: cb88a2c7ab16092bcf11a0aadeffce64b99274a2
   subpackages:
   - aws
   - aws/awserr
@@ -35,5 +35,9 @@ imports:
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/urfave/cli
-  version: 0bdeddeeb0f650497d603c4ad7b20cfe685682f6
+  version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
+- name: golang.org/x/sync
+  version: f52d1811a62927559de87708c8913c1650ce4f26
+  subpackages:
+  - errgroup
 testImports: []
