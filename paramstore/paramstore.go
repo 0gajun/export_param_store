@@ -36,15 +36,16 @@ func NewClient(region, environment, identifier string) Client {
 func (c *Client) GetParameters(envs []string) (Parameters, error) {
 	svc := c.newAwsService()
 
+	requestedEnvCount := len(envs)
+
 	queries := c.buildGetParameterQueries(envs)
 	queryCount := len(queries)
 
 	ch := make(chan Parameters)
+	defer close(ch)
+
 	eg, _ := errgroup.WithContext(context.Background())
-
-	for i := 0; i < queryCount; i++ {
-		query := queries[i]
-
+	for _, query := range queries {
 		eg.Go(func() error {
 			output, err := svc.GetParameters(query)
 			if err != nil {
@@ -68,6 +69,16 @@ func (c *Client) GetParameters(envs []string) (Parameters, error) {
 		case params := <-ch:
 			result = append(result, params...)
 		}
+	}
+
+	if requestedEnvCount != len(result) {
+		var nilSlice Parameters
+		var fetchedEnvs = []string{}
+		for _, param := range result {
+			fetchedEnvs = append(fetchedEnvs, param.Name)
+		}
+		msg := fmt.Sprintf("Cannot fetch required params. Required params are %v. But got only %v", envs, fetchedEnvs)
+		return nilSlice, cli.NewExitError(msg, 1)
 	}
 
 	return result, nil
@@ -100,22 +111,13 @@ func (c *Client) buildGetParameterQueries(envs []string) []*ssm.GetParametersInp
 }
 
 func splitIntoChunks(array []string, chunkSize int) [][]string {
-	var fromIndex = 0
-	var toIndex = 0
 	size := len(array)
 
 	chunks := [][]string{}
-	for {
-		for ; toIndex-fromIndex <= chunkSize && toIndex < size; toIndex++ {
+	for fromIndex, toIndex := 0, 0; toIndex < size; fromIndex = toIndex {
+		for ; toIndex-fromIndex < chunkSize && toIndex < size; toIndex++ {
 		}
-
 		chunks = append(chunks, array[fromIndex:toIndex])
-
-		if toIndex > size-1 {
-			break
-		} else {
-			toIndex = fromIndex
-		}
 	}
 
 	return chunks
